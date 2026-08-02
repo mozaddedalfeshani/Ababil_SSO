@@ -3,11 +3,11 @@ package models
 import "time"
 
 type Organization struct {
-	ID          string
-	Name        string
-	Slug        string
-	OwnerUserID string
-	CreatedAt   time.Time
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Slug        string    `json:"slug"`
+	OwnerUserID string    `json:"owner_user_id"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type OrgRole string
@@ -19,8 +19,8 @@ const (
 )
 
 type OrganizationMember struct {
-	OrgID     string
-	UserID    string
-	Role      OrgRole
-	CreatedAt time.Time
+	OrgID     string    `json:"org_id"`
+	UserID    string    `json:"user_id"`
+	Role      OrgRole   `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
 }

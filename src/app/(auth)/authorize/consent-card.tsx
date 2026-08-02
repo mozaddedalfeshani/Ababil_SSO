@@ -40,8 +40,10 @@ export function ConsentCard({ reqId, clientName, scopes, requiresConsent, emailU
   }
 
   useEffect(() => {
+    // Deferred a tick so the state updates inside decide() happen in a
+    // callback rather than synchronously during the effect itself.
     if (autoApproving) {
-      decide(true);
+      void Promise.resolve().then(() => decide(true));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

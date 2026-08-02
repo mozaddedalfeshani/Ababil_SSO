@@ -41,6 +41,11 @@ type Config struct {
 	AppBaseURL string
 
 	SMTP SMTPConfig
+
+	// AuditRetentionDays bounds how long audit_logs rows are kept —
+	// see docs/architecture.md "Privacy". Purged by cmd/retention, run
+	// on a schedule (cron / systemd timer) outside the main process.
+	AuditRetentionDays int
 }
 
 type SMTPConfig struct {
@@ -107,19 +112,25 @@ func Load() (*Config, error) {
 		From:     optionalEnv("SMTP_FROM", "noreply@localhost"),
 	}
 
+	auditRetentionDays, err := optionalEnvInt("AUDIT_RETENTION_DAYS", 90)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
-		Env:               env,
-		Addr:              addr,
-		DatabaseURL:       dbURL,
-		RedisURL:          redisURL,
-		Issuer:            issuer,
-		AppName:           appName,
-		KeyEncryptionKey:  kek,
-		TrustedProxyCIDRs: trustedProxies,
-		CookieDomain:      cookieDomain,
-		CookieSecure:      cookieSecure,
-		AppBaseURL:        appBaseURL,
-		SMTP:              smtp,
+		Env:                env,
+		Addr:               addr,
+		DatabaseURL:        dbURL,
+		RedisURL:           redisURL,
+		Issuer:             issuer,
+		AppName:            appName,
+		KeyEncryptionKey:   kek,
+		TrustedProxyCIDRs:  trustedProxies,
+		CookieDomain:       cookieDomain,
+		CookieSecure:       cookieSecure,
+		AppBaseURL:         appBaseURL,
+		SMTP:               smtp,
+		AuditRetentionDays: auditRetentionDays,
 	}, nil
 }
 

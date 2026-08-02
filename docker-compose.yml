@@ -48,6 +48,18 @@ services:
       timeout: 3s
       retries: 10
 
+  # One-shot job, not started by `up` — schedule it externally (host
+  # cron / systemd timer) as: docker compose run --rm retention
+  retention:
+    build:
+      context: ./server
+    entrypoint: ["/retention"]
+    env_file: .env
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   next:
     build:
       context: .

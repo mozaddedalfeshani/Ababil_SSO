@@ -61,6 +61,21 @@ func (r *AuditRepo) ListForUser(ctx context.Context, userID string, limit int) (
 	return out, rows.Err()
 }
 
+// Purge deletes audit rows older than retentionDays — the
+// bounded-retention half of the privacy posture described in
+// docs/architecture.md. Returns the number of rows removed so the
+// caller can log it. Takes whole days (not a Go Duration) because
+// that's what maps cleanly onto a Postgres interval literal.
+func (r *AuditRepo) Purge(ctx context.Context, retentionDays int) (int64, error) {
+	tag, err := r.pool.Exec(ctx,
+		`DELETE FROM audit_logs WHERE created_at < now() - make_interval(days => $1)`,
+		retentionDays)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
 // AnonymizeForUser is called on account deletion: the trail stays
 // (append-only, useful for security investigation) but stops naming
 // the deleted account. ON DELETE SET NULL on actor_user_id already

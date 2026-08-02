@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,15 +9,22 @@ import { api } from "@/lib/api";
 type Status = "verifying" | "success" | "error";
 
 export default function VerifyEmailPage() {
+  return (
+    <Suspense>
+      <VerifyEmailStatus />
+    </Suspense>
+  );
+}
+
+function VerifyEmailStatus() {
   const params = useSearchParams();
   const token = params.get("token");
-  const [status, setStatus] = useState<Status>("verifying");
+  // No-token is derivable directly from the render input — only the
+  // actual network call needs an effect.
+  const [status, setStatus] = useState<Status>(token ? "verifying" : "error");
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      return;
-    }
+    if (!token) return;
     api
       .post("/api/auth/verify-email", { token })
       .then(() => setStatus("success"))

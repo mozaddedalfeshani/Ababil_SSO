@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,14 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { api, ApiError } from "@/lib/api";
 
 export default function LoginTOTPPage() {
+  return (
+    <Suspense>
+      <LoginTOTPForm />
+    </Suspense>
+  );
+}
+
+function LoginTOTPForm() {
   const router = useRouter();
   const params = useSearchParams();
   const mfaPendingId = params.get("mfa") ?? "";

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    name: Go server
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sso
+          POSTGRES_PASSWORD: sso
+          POSTGRES_DB: sso
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sso"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sso:sso@localhost:5432/sso?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      SSO_ISSUER: http://localhost:5680
+      KEY_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=
+      APP_ENV: development
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: gofmt -l . | tee /tmp/fmt.out; test ! -s /tmp/fmt.out
+      - run: go vet ./...
+      - run: go run ./cmd/migrate
+      - run: go test ./...
+      - run: go build ./...
+
+  frontend:
+    name: Next.js frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec eslint src --max-warnings 0
+      - run: pnpm exec next build
+        env:
+          SSO_ISSUER: http://localhost:5680
+          SSO_BACKEND_URL: http://localhost:7897
+          NEXT_PUBLIC_APP_URL: http://localhost:5680

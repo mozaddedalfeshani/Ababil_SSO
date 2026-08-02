@@ -11,7 +11,12 @@ Go owns every protocol and security decision; Next.js owns every pixel.
   reuse detection, ES256 JWKS.
 
 See `docs/architecture.md` for the design rationale and threat model,
-and `SECURITY.md` to report a vulnerability.
+`docs/self-hosting.md` for deployment + key-backup guidance, and
+`SECURITY.md` to report a vulnerability.
+
+Want to see the whole protocol flow run end to end? `examples/rp-demo/run.sh`
+drives a full authorize → consent → token → refresh-rotation →
+reuse-detection walkthrough against a running instance.
 
 ## Quickstart (Docker Compose)
 

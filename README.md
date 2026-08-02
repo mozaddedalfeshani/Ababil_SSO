@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ababil SSO
 
-## Getting Started
+Open-source, privacy-first OAuth 2.1 / OpenID Connect identity provider.
+Go owns every protocol and security decision; Next.js owns every pixel.
 
-First, run the development server:
+- Pairwise subject identifiers by default — relying parties can't
+  correlate the same user with each other.
+- No telemetry, no third-party runtime calls, hashed IPs, bounded audit
+  retention.
+- PKCE-only authorization code flow, opaque rotated refresh tokens with
+  reuse detection, ES256 JWKS.
+
+See `docs/architecture.md` for the design rationale and threat model,
+and `SECURITY.md` to report a vulnerability.
+
+## Quickstart (Docker Compose)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+# fill in DATABASE_URL / REDIS_URL if not using the bundled containers,
+# and generate a key encryption key:
+openssl rand -base64 32   # paste into KEY_ENCRYPTION_KEY
+
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:5680.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local development (without Compose)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Backend (`server/`, Go 1.25+):
 
-## Learn More
+```bash
+cd server
+go run ./cmd/migrate   # apply schema (safe to re-run)
+go run ./cmd/serve     # listens on :7897
+```
 
-To learn more about Next.js, take a look at the following resources:
+Frontend (`src/`, requires pnpm):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm install
+pnpm dev               # listens on :5680, proxies /oauth,/api,/.well-known to :7897
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Both read configuration from `.env` at the repo root — see
+`.env.example` for every variable and what it controls.
 
-## Deploy on Vercel
+## Repository layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+server/     Go OAuth2.1/OIDC provider (Gin, pgx, Redis)
+src/        Next.js UI (App Router, Tailwind, shadcn/ui)
+examples/   Example relying party proving the OAuth loop end to end
+docs/       Architecture, threat model, self-host guide
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+Apache 2.0 — see `LICENSE`.

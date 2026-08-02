@@ -1,0 +1,26 @@
+# Local/dev default: plain HTTP on :80, proxied to :5680 by docker-compose.
+# For a real deployment, replace `:80` with your domain (e.g. `auth.example.com`)
+# and remove `auto_https off` — Caddy will obtain a Let's Encrypt cert
+# automatically. See docs for the self-host guide.
+{
+	auto_https off
+}
+
+:80 {
+	# Protocol + discovery + account/dev API go to Go. Order matters:
+	# more specific paths first.
+	handle /oauth/* {
+		reverse_proxy go:7897
+	}
+	handle /.well-known/* {
+		reverse_proxy go:7897
+	}
+	handle /api/* {
+		reverse_proxy go:7897
+	}
+
+	# Everything else is Next.js UI.
+	handle {
+		reverse_proxy next:3000
+	}
+}

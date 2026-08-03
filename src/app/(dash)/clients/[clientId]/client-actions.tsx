@@ -14,7 +14,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CopyButton } from "@/components/dash/copy-button";
 import { api } from "@/lib/api";
 
 type Props = { clientId: string; clientType: "public" | "confidential"; disabled: boolean };
@@ -45,8 +46,8 @@ export function ClientActions({ clientId, clientType, disabled }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-3">
-      <div className="flex gap-2">
+    <>
+      <div className="flex flex-wrap justify-end gap-2">
         {clientType === "confidential" && (
           <AlertDialog>
             <AlertDialogTrigger render={<Button variant="outline" />}>Rotate secret</AlertDialogTrigger>
@@ -87,13 +88,23 @@ export function ClientActions({ clientId, clientType, disabled }: Props) {
           </AlertDialog>
         )}
       </div>
-      {newSecret && (
-        <Alert className="max-w-md">
-          <AlertDescription className="break-all font-mono text-xs">
-            New secret (shown once): {newSecret}
+
+      {newSecret ? (
+        <Alert className="border-amber-500/40 bg-amber-500/10 text-foreground">
+          <AlertTitle className="flex items-center justify-between gap-2">
+            <span>New client secret</span>
+            <CopyButton value={newSecret} label="Copy secret" />
+          </AlertTitle>
+          <AlertDescription className="mt-2 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Shown once. Store it in your secrets manager — you can&apos;t retrieve it later.
+            </p>
+            <code className="block rounded-xl border border-border/60 bg-background/80 px-3 py-2 font-mono text-xs break-all">
+              {newSecret}
+            </code>
           </AlertDescription>
         </Alert>
-      )}
-    </div>
+      ) : null}
+    </>
   );
 }

@@ -6,20 +6,20 @@ import "fmt"
 // auth email reduces phishing-look-alike risk and keeps the mailer
 // dependency-free.
 
-func VerifyEmailMessage(verifyURL string) (subject, body string) {
+func VerifyEmailMessage(otp string) (subject, body string) {
 	subject = "Verify your email"
 	body = fmt.Sprintf(
-		"Confirm your email address to finish setting up your account:\n\n%s\n\nThis link expires in 24 hours. If you didn't request this, ignore this email.",
-		verifyURL,
+		"Your Ababil SSO verification code is:\n\n%s\n\nEnter this code on the verify-email page. It expires in 10 minutes. If you didn't request this, ignore this email.",
+		otp,
 	)
 	return
 }
 
-func ResetPasswordMessage(resetURL string) (subject, body string) {
+func ResetPasswordMessage(otp string) (subject, body string) {
 	subject = "Reset your password"
 	body = fmt.Sprintf(
-		"A password reset was requested for your account:\n\n%s\n\nThis link expires in 1 hour and can only be used once. If you didn't request this, you can ignore this email — your password will not change.",
-		resetURL,
+		"Your Ababil SSO password-reset code is:\n\n%s\n\nEnter this code with your new password on the reset page. It expires in 10 minutes and can only be used once. If you didn't request this, you can ignore this email — your password will not change.",
+		otp,
 	)
 	return
 }

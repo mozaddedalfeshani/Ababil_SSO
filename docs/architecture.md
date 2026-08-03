@@ -16,7 +16,7 @@ protected action is re-validated by Go against the session cookie.
 | Subject IDs | **Pairwise per client** | Two relying parties cannot correlate the same user by comparing `sub` — the core privacy guarantee of this project |
 | Token/session binding | Tokens without `offline_access` die with the session; `offline_access` survives logout | Matches OIDC scope semantics and the "authorized apps" mental model |
 | Redis outage | Auth endpoints fail closed; read-only traffic fails open | An attacker who can take down Redis must not thereby unlock unlimited credential stuffing |
-| Email verification | Required to approve consent or own a client; not required to log in | Blocks account-squatting from reaching a relying party without blocking signup |
+| Email verification | 6-digit email OTP (10 min, 5 tries); required to approve consent or own a client; not required to log in | Blocks account-squatting from reaching a relying party without blocking signup; OTP avoids brittle magic links |
 
 ## Why authorization codes live in Postgres, not Redis
 

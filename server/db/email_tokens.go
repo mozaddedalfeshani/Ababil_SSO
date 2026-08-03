@@ -49,13 +49,27 @@ func (r *EmailTokensRepo) Consume(ctx context.Context, id string) (bool, error) 
 
 // InvalidateAllForUser is called whenever a purpose's token is
 // superseded (e.g. a new reset request, or a password change) so old
-// links stop working instead of remaining valid until their TTL.
+// codes stop working instead of remaining valid until their TTL.
 func (r *EmailTokensRepo) InvalidateAllForUser(ctx context.Context, userID string, purpose models.EmailTokenPurpose) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE email_tokens SET consumed_at = now()
 		WHERE user_id = $1 AND purpose = $2 AND consumed_at IS NULL
 	`, userID, purpose)
 	return err
+}
+
+// ActiveByUserPurpose returns the newest unconsumed, unexpired token
+// for a user+purpose — used to verify email OTPs (look up by user,
+// then compare hash) instead of by raw token.
+func (r *EmailTokensRepo) ActiveByUserPurpose(ctx context.Context, userID string, purpose models.EmailTokenPurpose) (*models.EmailToken, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, user_id, purpose, token_hash, expires_at, consumed_at, created_at
+		FROM email_tokens
+		WHERE user_id = $1 AND purpose = $2 AND consumed_at IS NULL AND expires_at > now()
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, userID, purpose)
+	return scanEmailToken(row)
 }
 
 func scanEmailToken(row pgx.Row) (*models.EmailToken, error) {

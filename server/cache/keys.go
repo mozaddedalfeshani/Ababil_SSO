@@ -16,4 +16,10 @@ func RateLimitKey(bucket, key string) string { return fmt.Sprintf("rl:%s:%s", bu
 
 func LoginFailKey(emailHash string) string { return fmt.Sprintf("login_fail:%s", emailHash) }
 
+// OTPFailKey counts wrong email-OTP guesses per user+purpose. After
+// max attempts the outstanding OTP is invalidated.
+func OTPFailKey(purpose, userID string) string {
+	return fmt.Sprintf("otp_fail:%s:%s", purpose, userID)
+}
+
 func IPSaltKey(yyyymmdd string) string { return fmt.Sprintf("ipsalt:%s", yyyymmdd) }

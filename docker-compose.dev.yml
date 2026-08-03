@@ -1,0 +1,70 @@
+# Local dev stack: db + redis + hot-reloading Go backend only.
+# Frontend runs on the host (`pnpm dev`) so it proxies to the Go
+# container exposed on :7897 — see src/proxy.ts.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up --build
+#   (in another shell) pnpm dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sso
+      POSTGRES_PASSWORD: sso
+      POSTGRES_DB: sso
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sso"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    command: ["go", "run", "./cmd/migrate"]
+    env_file: .env.dev
+    volumes:
+      - ./server:/src
+      - go_dev_mod_cache:/root/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  go:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    env_file: .env.dev
+    ports:
+      - "7897:7897"
+    volumes:
+      - ./server:/src
+      - go_dev_mod_cache:/root/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pg_dev_data:
+  go_dev_mod_cache:

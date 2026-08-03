@@ -65,6 +65,7 @@ func registerAuthRoutes(api *gin.RouterGroup, deps Deps) {
 		auth.POST("/verify-email", deps.Auth.VerifyEmail)
 		auth.POST("/forgot-password", deps.Auth.ForgotPassword)
 		auth.POST("/reset-password", deps.Auth.ResetPassword)
+		auth.POST("/resend-verification", deps.Auth.ResendVerification)
 	}
 
 	// Logout is intentionally CSRF-gated but not RequireSession-gated:
@@ -75,12 +76,6 @@ func registerAuthRoutes(api *gin.RouterGroup, deps Deps) {
 	authCSRF.Use(middleware.RequireCSRF(deps.Cookies))
 	{
 		authCSRF.POST("/logout", deps.Auth.Logout)
-	}
-
-	authed := api.Group("/auth")
-	authed.Use(middleware.RequireSession(deps.Identity, deps.Cookies))
-	{
-		authed.POST("/resend-verification", deps.Auth.ResendVerification)
 	}
 }
 

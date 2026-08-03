@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { serverFetch } from "@/lib/server-fetch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/dash/page-header";
 import { ProfileSection } from "./profile-section";
 import { PasswordSection } from "./password-section";
 import { TOTPSection } from "./totp-section";
@@ -26,8 +27,8 @@ export default async function AccountPage() {
   if (!session) return null; // layout already guards this
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Account" description="Profile, security, sessions, and data controls." />
 
       <Tabs defaultValue="profile">
         <TabsList>

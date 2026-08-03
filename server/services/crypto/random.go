@@ -31,3 +31,25 @@ func RandomHex(n int) (string, error) {
 	}
 	return hex.EncodeToString(b), nil
 }
+
+// RandomDigits returns an n-digit decimal string (leading zeros
+// preserved) using rejection sampling so each digit is uniform.
+func RandomDigits(n int) (string, error) {
+	if n <= 0 || n > 18 {
+		return "", fmt.Errorf("digit length out of range: %d", n)
+	}
+	out := make([]byte, n)
+	for i := 0; i < n; {
+		var b [1]byte
+		if _, err := rand.Read(b[:]); err != nil {
+			return "", fmt.Errorf("read random bytes: %w", err)
+		}
+		// 250..255 would bias %10 — reject them.
+		if b[0] >= 250 {
+			continue
+		}
+		out[i] = '0' + (b[0] % 10)
+		i++
+	}
+	return string(out), nil
+}

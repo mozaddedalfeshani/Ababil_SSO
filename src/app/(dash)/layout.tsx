@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { DashNav } from "./dash-nav";
+import { DashShell } from "@/components/dash/dash-shell";
 
 export default async function DashLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -8,10 +8,5 @@ export default async function DashLayout({ children }: { children: React.ReactNo
     redirect("/login");
   }
 
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <DashNav email={session.email} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
-    </div>
-  );
+  return <DashShell email={session.email}>{children}</DashShell>;
 }

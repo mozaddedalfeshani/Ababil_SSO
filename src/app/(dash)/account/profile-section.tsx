@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SessionUser } from "@/lib/session";
-import { ResendVerificationButton } from "./resend-verification-button";
+import { ResendVerificationButton } from "@/components/auth/resend-verification-button";
 
 export function ProfileSection({ session }: { session: SessionUser }) {
   return (
@@ -20,7 +20,7 @@ export function ProfileSection({ session }: { session: SessionUser }) {
               <Badge variant="destructive">Unverified</Badge>
             )}
           </div>
-          {!session.email_verified && <ResendVerificationButton />}
+          {!session.email_verified && <ResendVerificationButton email={session.email} />}
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">User ID</span>

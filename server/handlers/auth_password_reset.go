@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"ababilx-sso/services/audit"
+	"ababilx-sso/services/crypto"
 	"ababilx-sso/services/identity"
 	"ababilx-sso/services/ratelimit"
 
@@ -37,11 +38,12 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "if that email is registered, a reset link has been sent"})
+	c.JSON(http.StatusOK, gin.H{"message": "if that email is registered, a reset code has been sent"})
 }
 
 type resetPasswordRequest struct {
-	Token       string `json:"token" binding:"required"`
+	Email       string `json:"email" binding:"required,email"`
+	OTP         string `json:"otp" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
@@ -50,13 +52,19 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	var req resetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, http.StatusBadRequest, "invalid_request", "token and new_password (min 8 chars) are required")
+		respondError(c, http.StatusBadRequest, "invalid_request", "email, otp, and new_password (min 8 chars) are required")
 		return
 	}
 
-	if err := h.Identity.ResetPassword(ctx, req.Token, req.NewPassword); err != nil {
+	emailKey := crypto.HashToken(identity.NormalizeEmail(req.Email))
+	if err := h.RateLimit.Allow(ctx, "reset_password_otp", emailKey, 20, time.Hour, ratelimit.FailClosed); err != nil {
+		respondError(c, http.StatusTooManyRequests, "rate_limited", "too many attempts, try again later")
+		return
+	}
+
+	if err := h.Identity.ResetPassword(ctx, req.Email, req.OTP, req.NewPassword); err != nil {
 		if errors.Is(err, identity.ErrInvalidToken) {
-			respondError(c, http.StatusBadRequest, "invalid_token", "reset link is invalid or expired")
+			respondError(c, http.StatusBadRequest, "invalid_token", "reset code is invalid or expired")
 			return
 		}
 		respondInternalError(c, err)

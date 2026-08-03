@@ -29,8 +29,8 @@ func DefaultLifetimes() Lifetimes {
 	return Lifetimes{
 		SessionIdle:     14 * 24 * time.Hour,
 		SessionAbsolute: 30 * 24 * time.Hour,
-		EmailTokenTTL:   24 * time.Hour,
-		ResetTokenTTL:   1 * time.Hour,
+		EmailTokenTTL:   10 * time.Minute,
+		ResetTokenTTL:   10 * time.Minute,
 		MFAPendingTTL:   5 * time.Minute,
 	}
 }
@@ -48,7 +48,7 @@ type Service struct {
 	Lockout          *ratelimit.Lockout
 	Issuer           string // OIDC issuer (protocol `iss`, e.g. https://auth.example.com)
 	AppName          string // human-readable name shown in authenticator apps, e.g. "Ababil SSO"
-	AppBaseURL       string // for building verify/reset links
+	AppBaseURL       string // Next.js UI base (authorize/logout redirects)
 	KeyEncryptionKey []byte // seals TOTP secrets at rest (AES-256-GCM)
 	Lifetimes        Lifetimes
 }

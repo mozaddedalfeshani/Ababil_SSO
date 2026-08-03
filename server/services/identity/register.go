@@ -4,15 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"ababilx-sso/db"
 	"ababilx-sso/models"
-	"ababilx-sso/services/crypto"
 	"ababilx-sso/services/mail"
 )
 
-// Register creates a user and sends a verification email. It does not
+// Register creates a user and sends a verification OTP. It does not
 // mint a session — the caller (handler) decides whether to log the
 // user in immediately (allowed: email verification gates OAuth
 // consent and org/client ownership, not login itself).
@@ -42,6 +40,27 @@ func (s *Service) Register(ctx context.Context, email, password string) (*models
 	return user, nil
 }
 
+// RequestVerificationResend always returns nil on a well-formed
+// request regardless of whether the email exists or is already
+// verified — existence/verification must not be observable from the
+// response (same posture as RequestPasswordReset).
+func (s *Service) RequestVerificationResend(ctx context.Context, email string) error {
+	normalized := NormalizeEmail(email)
+	user, err := s.Users.ByEmail(ctx, normalized)
+	if errors.Is(err, db.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if user.EmailVerified() {
+		return nil
+	}
+	return s.sendVerificationEmail(ctx, user)
+}
+
+// ResendVerification sends another OTP for an already-authenticated
+// user. Prefer RequestVerificationResend for unauthenticated flows.
 func (s *Service) ResendVerification(ctx context.Context, userID string) error {
 	user, err := s.Users.ByID(ctx, userID)
 	if err != nil {
@@ -54,47 +73,21 @@ func (s *Service) ResendVerification(ctx context.Context, userID string) error {
 }
 
 func (s *Service) sendVerificationEmail(ctx context.Context, user *models.User) error {
-	// Invalidate prior outstanding verify tokens so only the newest
-	// link works — otherwise an old, forwarded email stays valid.
-	if err := s.EmailTokens.InvalidateAllForUser(ctx, user.ID, models.EmailTokenVerify); err != nil {
-		return err
-	}
-
-	rawToken, err := crypto.RandomToken(32)
+	otp, err := s.issueEmailOTP(ctx, user.ID, models.EmailTokenVerify, s.Lifetimes.EmailTokenTTL)
 	if err != nil {
 		return err
 	}
-	if _, err := s.EmailTokens.Create(ctx, user.ID, models.EmailTokenVerify, crypto.HashToken(rawToken), time.Now().UTC().Add(s.Lifetimes.EmailTokenTTL)); err != nil {
-		return err
-	}
-
-	verifyURL := fmt.Sprintf("%s/verify-email?token=%s", s.AppBaseURL, rawToken)
-	subject, body := mail.VerifyEmailMessage(verifyURL)
+	subject, body := mail.VerifyEmailMessage(otp)
 	return s.Mailer.Send(ctx, user.Email, subject, body)
 }
 
-// VerifyEmail redeems a verification token. Errors are not
-// distinguished (expired vs. already-used vs. unknown) to avoid
-// leaking which case applies to a guessed token.
-func (s *Service) VerifyEmail(ctx context.Context, rawToken string) error {
-	token, err := s.EmailTokens.ByTokenHash(ctx, crypto.HashToken(rawToken))
-	if err != nil {
-		if errors.Is(err, db.ErrNotFound) {
-			return ErrInvalidToken
-		}
-		return err
-	}
-	if token.Purpose != models.EmailTokenVerify {
-		return ErrInvalidToken
-	}
-
-	consumed, err := s.EmailTokens.Consume(ctx, token.ID)
+// VerifyEmail redeems a verification OTP. Errors are not distinguished
+// (wrong vs expired vs unknown email) to avoid leaking which case
+// applies.
+func (s *Service) VerifyEmail(ctx context.Context, email, otp string) error {
+	userID, err := s.consumeEmailOTP(ctx, email, otp, models.EmailTokenVerify)
 	if err != nil {
 		return err
 	}
-	if !consumed {
-		return ErrInvalidToken
-	}
-
-	return s.Users.MarkEmailVerified(ctx, token.UserID)
+	return s.Users.MarkEmailVerified(ctx, userID)
 }

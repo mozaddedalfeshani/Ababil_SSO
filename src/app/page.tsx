@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AbabilLogoMark } from "@/components/brand/ababil-mark";
 
 const FEATURES = [
   {
@@ -20,10 +21,8 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">
-            A
-          </span>
+        <div className="flex items-center gap-2.5 text-sm font-semibold">
+          <AbabilLogoMark />
           Ababil SSO
         </div>
         <div className="flex items-center gap-3">

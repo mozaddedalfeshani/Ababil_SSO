@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { api } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -19,34 +20,18 @@ export default function ForgotPasswordPage() {
     try {
       await api.post("/api/auth/forgot-password", { email });
     } finally {
-      // Always show the same result — the endpoint itself doesn't
-      // reveal whether the email exists, and neither should the UI.
+      // Always continue — the endpoint itself doesn't reveal whether
+      // the email exists, and neither should the UI.
       setLoading(false);
-      setDone(true);
+      router.push(`/reset-password?email=${encodeURIComponent(email)}`);
     }
-  }
-
-  if (done) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Check your inbox</CardTitle>
-          <CardDescription>If that email is registered, a reset link has been sent.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/login" className="text-sm font-medium hover:underline">
-            Back to sign in
-          </Link>
-        </CardContent>
-      </Card>
-    );
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Reset your password</CardTitle>
-        <CardDescription>We&apos;ll email you a link to set a new password.</CardDescription>
+        <CardDescription>We&apos;ll email you a 6-digit code to set a new password.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -62,7 +47,7 @@ export default function ForgotPasswordPage() {
             />
           </div>
           <Button type="submit" disabled={loading} className="mt-2">
-            {loading ? "Sending…" : "Send reset link"}
+            {loading ? "Sending…" : "Send reset code"}
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-muted-foreground">

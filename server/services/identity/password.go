@@ -3,12 +3,9 @@ package identity
 import (
 	"context"
 	"errors"
-	"fmt"
-	"time"
 
 	"ababilx-sso/db"
 	"ababilx-sso/models"
-	"ababilx-sso/services/crypto"
 	"ababilx-sso/services/mail"
 )
 
@@ -55,56 +52,33 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 		return err
 	}
 
-	if err := s.EmailTokens.InvalidateAllForUser(ctx, user.ID, models.EmailTokenReset); err != nil {
-		return err
-	}
-
-	rawToken, err := crypto.RandomToken(32)
+	otp, err := s.issueEmailOTP(ctx, user.ID, models.EmailTokenReset, s.Lifetimes.ResetTokenTTL)
 	if err != nil {
 		return err
 	}
-	if _, err := s.EmailTokens.Create(ctx, user.ID, models.EmailTokenReset, crypto.HashToken(rawToken), time.Now().UTC().Add(s.Lifetimes.ResetTokenTTL)); err != nil {
-		return err
-	}
-
-	resetURL := fmt.Sprintf("%s/reset-password?token=%s", s.AppBaseURL, rawToken)
-	subject, body := mail.ResetPasswordMessage(resetURL)
+	subject, body := mail.ResetPasswordMessage(otp)
 	return s.Mailer.Send(ctx, user.Email, subject, body)
 }
 
-// ResetPassword redeems a reset token, sets the new password, and —
+// ResetPassword redeems a reset OTP, sets the new password, and —
 // same reasoning as ChangePassword — revokes every existing session
 // and every outstanding reset token for the account.
-func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword string) error {
-	token, err := s.EmailTokens.ByTokenHash(ctx, crypto.HashToken(rawToken))
-	if err != nil {
-		if errors.Is(err, db.ErrNotFound) {
-			return ErrInvalidToken
-		}
-		return err
-	}
-	if token.Purpose != models.EmailTokenReset {
-		return ErrInvalidToken
-	}
-
-	consumed, err := s.EmailTokens.Consume(ctx, token.ID)
+func (s *Service) ResetPassword(ctx context.Context, email, otp, newPassword string) error {
+	userID, err := s.consumeEmailOTP(ctx, email, otp, models.EmailTokenReset)
 	if err != nil {
 		return err
-	}
-	if !consumed {
-		return ErrInvalidToken
 	}
 
 	newHash, err := s.Hasher.Hash(ctx, newPassword)
 	if err != nil {
 		return err
 	}
-	if err := s.Users.UpdatePassword(ctx, token.UserID, newHash); err != nil {
+	if err := s.Users.UpdatePassword(ctx, userID, newHash); err != nil {
 		return err
 	}
-	if err := s.EmailTokens.InvalidateAllForUser(ctx, token.UserID, models.EmailTokenReset); err != nil {
+	if err := s.EmailTokens.InvalidateAllForUser(ctx, userID, models.EmailTokenReset); err != nil {
 		return err
 	}
 
-	return s.Sessions.RevokeAllForUser(ctx, token.UserID)
+	return s.Sessions.RevokeAllForUser(ctx, userID)
 }

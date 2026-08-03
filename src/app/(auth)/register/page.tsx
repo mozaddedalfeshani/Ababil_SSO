@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,11 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api, ApiError } from "@/lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,30 +27,12 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await api.post("/api/auth/register", { email, password });
-      setDone(true);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
-
-  if (done) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Check your inbox</CardTitle>
-          <CardDescription>
-            If that email is available, we&apos;ve sent a verification link to <strong>{email}</strong>.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/login" className="text-sm font-medium hover:underline">
-            Back to sign in
-          </Link>
-        </CardContent>
-      </Card>
-    );
   }
 
   return (

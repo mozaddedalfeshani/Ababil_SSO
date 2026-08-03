@@ -4,6 +4,7 @@ import { serverFetch } from "@/lib/server-fetch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/dash/page-header";
 
 type Organization = { id: string; name: string; slug: string };
 type ClientSummary = {
@@ -26,47 +27,58 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ id: 
   const clients = clientsData?.clients ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{org.name}</h1>
-          <p className="font-mono text-xs text-muted-foreground">{org.slug}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`/orgs/${id}/members`} />}>
-            Members
-          </Button>
-          <Button render={<Link href={`/orgs/${id}/apps/new`} />}>New app</Button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title={org.name}
+        description={<span className="font-mono text-xs">{org.slug}</span>}
+        actions={
+          <>
+            <Button variant="outline" render={<Link href={`/orgs/${id}/members`} />}>
+              Members
+            </Button>
+            <Button render={<Link href={`/orgs/${id}/apps/new`} />}>New application</Button>
+          </>
+        }
+      />
 
-      {clients.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No applications yet</CardTitle>
-            <CardDescription>Register an OAuth client to start integrating.</CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {clients.map((c) => (
-            <Link key={c.id} href={`/clients/${c.id}`}>
-              <Card className="transition-colors hover:border-foreground/30">
-                <CardContent className="flex items-center justify-between py-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{c.name}</span>
-                      {c.disabled && <Badge variant="destructive">Disabled</Badge>}
-                    </div>
-                    <p className="font-mono text-xs text-muted-foreground">{c.client_id}</p>
-                  </div>
-                  <Badge variant="secondary">{c.client_type}</Badge>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+      <section className="space-y-3">
+        <div className="flex items-end justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Applications</h2>
+            <p className="text-xs text-muted-foreground">OAuth clients registered under this organization.</p>
+          </div>
         </div>
-      )}
+
+        {clients.length === 0 ? (
+          <Card className="border-dashed">
+            <CardHeader>
+              <CardTitle className="text-base">No applications yet</CardTitle>
+              <CardDescription>Register an OAuth client to start integrating a relying party.</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {clients.map((c) => (
+              <Link key={c.id} href={`/clients/${c.id}`} className="group">
+                <Card className="transition-colors group-hover:border-foreground/25 group-hover:bg-muted/20">
+                  <CardContent className="flex items-center justify-between gap-4 py-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{c.name}</span>
+                        {c.disabled ? <Badge variant="destructive">Disabled</Badge> : null}
+                      </div>
+                      <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{c.client_id}</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 capitalize">
+                      {c.client_type}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

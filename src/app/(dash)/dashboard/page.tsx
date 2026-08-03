@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { serverFetch } from "@/lib/server-fetch";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/dash/page-header";
 import { NewOrgDialog } from "./new-org-dialog";
 
 type Organization = { id: string; name: string; slug: string; created_at: string };
@@ -10,27 +11,27 @@ export default async function DashboardPage() {
   const orgs = data?.organizations ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Organizations</h1>
-          <p className="text-sm text-muted-foreground">Organizations own the OAuth clients your apps use.</p>
-        </div>
-        <NewOrgDialog />
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Organizations"
+        description="Organizations own OAuth applications your products use to sign users in."
+        actions={<NewOrgDialog />}
+      />
 
       {orgs.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>No organizations yet</CardTitle>
-            <CardDescription>Create one to register your first OAuth client.</CardDescription>
+        <Card className="border-dashed">
+          <CardHeader className="py-10 text-center">
+            <CardTitle>Create your first organization</CardTitle>
+            <CardDescription className="mx-auto max-w-sm">
+              Then register an application to get a client ID (and secret for confidential apps).
+            </CardDescription>
           </CardHeader>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {orgs.map((org) => (
-            <Link key={org.id} href={`/orgs/${org.id}`}>
-              <Card className="transition-colors hover:border-foreground/30">
+            <Link key={org.id} href={`/orgs/${org.id}`} className="group">
+              <Card className="h-full transition-colors group-hover:border-foreground/25 group-hover:bg-muted/20">
                 <CardHeader>
                   <CardTitle className="text-base">{org.name}</CardTitle>
                   <CardDescription className="font-mono text-xs">{org.slug}</CardDescription>
